@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+  django:
+    build: .
+    command:
+      - sh -c "gunicorn --bind 0.0.0.0:8000 config.wsgi"
+    volumes:
+      - .:/src
+      - static_data:/src/static
+    expose:
+      - 8000
+    environment:
+      - DATABASE_URL=postgresql://test_db_user:test_db_user_password@db:5432/test_db
+      - DEBUG=1
+
+  postgres:
+    image: postgres:13-alpine
+    volumes:
+      - pg_data:/var/lib/postgresql/data/
+    expose:
+      - 5432
+    environment:
+      - POSTGRES_DB=test_db
+      - POSTGRES_USER=test_db_user
+      - POSTGRES_PASSWORD=test_db_user_password
+
+  nginx:
+    image: nginx:1.19.8-alpine
+    depends_on:
+      - django
+    ports:
+      - "80:80"
+    volumes:
+      - static_data:/var/www/html/static
+      - ./nginx-conf.d:/etc/nginx/conf.d
+
+volumes:
+  pg_data:
+  static_data:
